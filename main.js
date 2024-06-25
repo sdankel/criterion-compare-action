@@ -3,8 +3,6 @@ const exec = require("@actions/exec");
 const core = require("@actions/core");
 const github = require("@actions/github");
 
-const HIDDEN_ACTION_COMMENT = "<!-- criterion-compare-action -->";
-
 const context = github.context;
 
 async function main() {
@@ -15,8 +13,8 @@ async function main() {
     benchName: core.getInput("benchName"),
     package: core.getInput("package"),
     features: core.getInput("features"),
-    defaultFeatures: core.getInput("defaultFeatures"),
-    updateComment: core.getInput("updateComment"),    
+    defaultFeatures: core.getBooleanInput("defaultFeatures"),
+    updateComment: core.getBooleanInput("updateComment"),    
   };
   core.debug(`Inputs: ${inspect(inputs)}`);
 
@@ -82,7 +80,7 @@ async function main() {
   core.setOutput("stdout", myOutput);
   core.setOutput("stderr", myError);
 
-  const resultsAsMarkdown = convertToMarkdown(myOutput);
+  const resultsAsMarkdown = convertToMarkdown(myOutput, getCommentHash(inputs));
 
   // An authenticated instance of `@octokit/rest`
   const octokit = github.getOctokit(inputs.token);
@@ -90,7 +88,7 @@ async function main() {
   const contextObj = { ...context.issue };
 
   try {
-    await createOrUpdateComment({ updateComment: inputs.updateComment, resultsAsMarkdown, contextObj });
+    await createOrUpdateComment({ inputs, resultsAsMarkdown, contextObj });
   } catch (err) {
     core.warning(`Failed to comment: ${err}`);
     core.info("Commenting is not possible from forks.");
@@ -105,8 +103,8 @@ async function main() {
   core.debug("Succesfully run!");
 }
 
-async function createOrUpdateComment({ updateComment, resultsAsMarkdown, contextObj }) {
-  if (updateComment) {
+async function createOrUpdateComment({ inputs, resultsAsMarkdown, contextObj }) {
+  if (inputs.updateComment) {
     // Get all comments on the issue
     const { data: comments } = await octokit.rest.issues.listComments({
       owner: contextObj.owner,
@@ -114,7 +112,7 @@ async function createOrUpdateComment({ updateComment, resultsAsMarkdown, context
       issue_number: contextObj.number,
     });
     // Find the comment that was created by this action
-    const comment = comments.find(c => c.body.includes(HIDDEN_ACTION_COMMENT));
+    const comment = comments.find(c => c.body.includes(getCommentHash(inputs)));
     // Update the comment if it exists
     if (comment) {
       await octokit.rest.issues.updateComment({
@@ -142,6 +140,11 @@ async function createOrUpdateComment({ updateComment, resultsAsMarkdown, context
     `Created comment id '${comment.id}' on issue '${contextObj.number}' in '${contextObj.repo}'.`
   );
   core.setOutput("comment-id", comment.id);
+}
+
+function getCommentHash(inputs) {
+  const hash = `${inputs.benchName}${inputs.package}${inputs.features}${inputs.defaultFeatures}`;
+  return `<!-- criterion-compare-action: ${hash} -->`;
 }
 
 function convertDurToSeconds(dur, units) {
@@ -175,7 +178,7 @@ function isSignificant(changesDur, changesErr, baseDur, baseErr) {
   }
 }
 
-function convertToMarkdown(results) {
+function convertToMarkdown(results, commentToken) {
   /* Example results:
     group                            base                                   changes
     -----                            ----                                   -------
@@ -268,7 +271,7 @@ function convertToMarkdown(results) {
     .join("\n");
 
   let shortSha = context.sha.slice(0, 7);
-  return `${HIDDEN_ACTION_COMMENT}
+  return `${commentToken}
 ## Benchmark for ${shortSha}
   <details>
     <summary>Click to view benchmark</summary>
