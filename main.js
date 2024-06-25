@@ -82,9 +82,6 @@ async function main() {
 
   const resultsAsMarkdown = convertToMarkdown(myOutput, getCommentHash(inputs));
 
-  // An authenticated instance of `@octokit/rest`
-  const octokit = github.getOctokit(inputs.token);
-
   const contextObj = { ...context.issue };
 
   try {
@@ -104,6 +101,9 @@ async function main() {
 }
 
 async function createOrUpdateComment({ inputs, resultsAsMarkdown, contextObj }) {
+  // An authenticated instance of `@octokit/rest`
+  const octokit = github.getOctokit(inputs.token);
+
   if (inputs.updateComment) {
     // Get all comments on the issue
     const { data: comments } = await octokit.rest.issues.listComments({
