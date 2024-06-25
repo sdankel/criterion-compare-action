@@ -11,12 +11,12 @@ async function main() {
   const inputs = {
     token: core.getInput("token", { required: true }),
     branchName: core.getInput("branchName", { required: true }),
-    updateComment: core.getInput("updateComment"),
     cwd: core.getInput("cwd"),
     benchName: core.getInput("benchName"),
     package: core.getInput("package"),
     features: core.getInput("features"),
     defaultFeatures: core.getInput("defaultFeatures"),
+    updateComment: core.getInput("updateComment"),    
   };
   core.debug(`Inputs: ${inspect(inputs)}`);
 

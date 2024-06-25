@@ -36,6 +36,8 @@ jobs:
           defaultFeatures: false
           # Optional. Features activated in the benchmark
           features: "async,tokio-support"
+          # Optional. Updates an existing comment rather than creating a new one
+          updateComment: false
           # Needed. The name of the branch to compare with. This default uses the branch which is being pulled against
           branchName: ${{ github.base_ref }}
           # Optional. Default is `${{ github.token }}`.
