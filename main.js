@@ -271,8 +271,8 @@ function convertToMarkdown(results, commentToken) {
     .join("\n");
 
   let shortSha = context.sha.slice(0, 7);
-  return `${commentToken}
-## Benchmark for ${shortSha}
+  return `## Benchmark for ${shortSha}
+  ${commentToken}
   <details>
     <summary>Click to view benchmark</summary>
 
